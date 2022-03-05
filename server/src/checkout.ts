@@ -7,6 +7,17 @@ import Stripe from 'stripe';
 export async function createStripeCheckoutSession(line_items: Stripe.Checkout.SessionCreateParams.LineItem[]) {
   const url = process.env.WEBAPP_URL;
 
+  // example line_items
+  //   {
+  //     "line_items": [
+  //         {
+  //             "name": "hat",
+  //             "amount": 500,
+  //             "currency": "usd",
+  //             "quantity": 3
+  //         }
+  //     ]
+  // }
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     line_items,
