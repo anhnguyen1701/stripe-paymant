@@ -13,12 +13,20 @@ app.post('/test', (req: Request, res: Response) => {
 });
 
 import { createStripeCheckoutSession } from './checkout';
+import { createPaymentIntent } from './payments';
 
 // checkout
 app.post(
   '/checkouts/',
   runAsync(async ({ body }: Request, res: Response) => {
     res.send(await createStripeCheckoutSession(body.line_items));
+  })
+);
+
+app.post(
+  '/payments',
+  runAsync(async ({ body }: Request, res: Response) => {
+    res.send(await createPaymentIntent(body.amount));
   })
 );
 
