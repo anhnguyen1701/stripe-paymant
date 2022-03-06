@@ -33,3 +33,13 @@ export async function getOrCreateCustomer(userId: string, params?: Stripe.Custom
     return (await stripe.customers.retrieve(stripeCustomerId)) as Stripe.Customer;
   }
 }
+
+// return all payment source assosciated to user
+export async function listPaymentMethods(userId: string) {
+  const customer = await getOrCreateCustomer(userId);
+
+  return stripe.paymentMethods.list({
+    customer: customer.id,
+    type: 'card',
+  });
+}

@@ -1,7 +1,7 @@
 import { createStripeCheckoutSession } from './checkout';
 import { createPaymentIntent } from './payments';
 import { handleStripeWebhook } from './webhooks';
-import { createSetupIntent } from './customers';
+import { createSetupIntent, listPaymentMethods } from './customers';
 import { auth } from './firebase';
 import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
@@ -41,12 +41,23 @@ app.post(
 
 app.post('/hooks', runAsync(handleStripeWebhook));
 
+// Save a card on the customer record with a SetupIntent
 app.post(
   '/wallet',
   runAsync(async (req: Request, res: Response) => {
     const user = validateUser(req);
     const setupIntent = await createSetupIntent(user.uid);
     res.send(setupIntent);
+  })
+);
+
+app.get(
+  '/wallet',
+  runAsync(async (req: Request, res: Response) => {
+    const user = validateUser(req);
+
+    const wallet = await listPaymentMethods(user.uid);
+    res.send(wallet.data);
   })
 );
 
