@@ -1,9 +1,14 @@
+import { createStripeCheckoutSession } from './checkout';
+import { createPaymentIntent } from './payments';
+import { handleStripeWebhook } from './webhooks';
+import { createSetupIntent } from './customers';
+import { auth } from './firebase';
 import express, { NextFunction, Request, Response } from 'express';
+import cors from 'cors';
 export const app = express();
 
+app.use(decodeJWT);
 app.use(express.json());
-
-import cors from 'cors';
 app.use(cors({ origin: true }));
 
 //set raw body for webhook handling
@@ -18,10 +23,6 @@ app.post('/test', (req: Request, res: Response) => {
 
   res.status(200).send({ with_tax: amount * 7 });
 });
-
-import { createStripeCheckoutSession } from './checkout';
-import { createPaymentIntent } from './payments';
-import { handleStripeWebhook } from './webhooks';
 
 // checkout
 app.post(
@@ -40,8 +41,39 @@ app.post(
 
 app.post('/hooks', runAsync(handleStripeWebhook));
 
+app.post(
+  '/wallet',
+  runAsync(async (req: Request, res: Response) => {
+    const user = validateUser(req);
+    const setupIntent = await createSetupIntent(user.uid);
+    res.send(setupIntent);
+  })
+);
+
 function runAsync(callback: Function) {
   return (req: Request, res: Response, next: NextFunction) => {
     callback(req, res, next).catch(next);
   };
+}
+
+async function decodeJWT(req: Request, res: Response, next: NextFunction) {
+  if (req.headers?.authorization?.startsWith('Bearer ')) {
+    const idToken = req.headers.authorization.split('Bearer ')[1];
+
+    try {
+      const decodedToken = await auth.verifyIdToken(idToken);
+      req['currentUser'] = decodedToken;
+    } catch (err) {
+      console.log(err);
+    }
+  }
+  next();
+}
+
+function validateUser(req: Request) {
+  const user = req['currentUser'];
+  if (!user) {
+    throw new Error('you must be logged in to make this request');
+  }
+  return user;
 }
