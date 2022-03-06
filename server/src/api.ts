@@ -5,6 +5,7 @@ import { createSetupIntent, listPaymentMethods } from './customers';
 import { auth } from './firebase';
 import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
+import { createSubscription } from './billing';
 export const app = express();
 
 app.use(decodeJWT);
@@ -58,6 +59,17 @@ app.get(
 
     const wallet = await listPaymentMethods(user.uid);
     res.send(wallet.data);
+  })
+);
+
+// create a and charge new Subscription
+app.post(
+  '/subscriptions/',
+  runAsync(async (req: Request, res: Response) => {
+    const user = validateUser(req);
+    const { plan, payment_method } = req.body;
+    const subscription = await createSubscription(user.uid, plan, payment_method);
+    res.send(subscription);
   })
 );
 
